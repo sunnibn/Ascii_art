@@ -44,12 +44,13 @@ int main(int argc, char **argv)
 	//=== sdl ttf
 	TTF_Init();
 	string fontPath = "assets/Ubuntu_Mono/UbuntuMono-Regular.ttf";
+	vector<int> fontSizes = {10,11,12,13,14,15,16,17,18,19,20};
+	vector<TTF_Font*> fonts;
 	TTF_Font *font;
-	font = TTF_OpenFont(fontPath.c_str(), 20);
-	TTF_Font *font2;
-	font2 = TTF_OpenFont(fontPath.c_str(), 15);
-	TTF_Font *font3;
-	font3 = TTF_OpenFont(fontPath.c_str(), 10);
+	for (int i=0; i<(int)fontSizes.size(); i++) {
+		font = TTF_OpenFont(fontPath.c_str(), fontSizes[i]);
+		fonts.push_back(font);
+	}
 
 	//=== sdl image
 	IMG_Init(IMG_INIT_JPG|IMG_INIT_PNG);
@@ -70,9 +71,12 @@ int main(int argc, char **argv)
 	sideBox.recolorBox(150,0,0,255);
 	downBox.recolorBox(0,0,150,255);
 
-	editBox.preset(font2);
-	sideBox.preset(font2);
-	downBox.preset(font2);
+	// editBox.refontBox(fonts[2]);
+	// sideBox.refontBox(fonts[2]);
+	// downBox.refontBox(fonts[2]);
+	editBox.Construct(fonts[sideBox.refontTab()], fonts[5]);
+	sideBox.Construct(fonts[sideBox.refontTab()], fonts[5]);
+	downBox.Construct(fonts[downBox.refontTab()], fonts[5]);
 
 	//=== init: text art obj, cursor timing, mouse.
 	TextArt textArt(10, 20);
@@ -110,15 +114,15 @@ int main(int argc, char **argv)
 				if(SDL_GetModState() & KMOD_CTRL) {
 					switch(e.key.keysym.sym) {
 						case SDLK_s:
-							func_write_file(&textArt.text);
+							func_write_file(&textArt.texts);
 							break;
 						case SDLK_z:
 							cout<<"ctrlz"<<endl;
 							break;
 						case SDLK_o:
-							func_win_open_dialog(&textArt.text);
-							textArt.rowSize = textArt.text.size();
-							textArt.colSize = textArt.text[0].size();
+							func_win_open_dialog(&textArt.texts);
+							textArt.rowSize = textArt.texts.size();
+							textArt.colSize = textArt.texts[0].size();
 							textArt.rowCur = 0;
 							textArt.colCur = 0;
 							break;
@@ -128,7 +132,7 @@ int main(int argc, char **argv)
 				else {
 					switch(e.key.keysym.sym) {
 						case SDLK_BACKSPACE:
-							textArt.text[textArt.rowCur][textArt.colCur] = ' ';
+							textArt.texts[textArt.rowCur][textArt.colCur] = ' ';
 							break;
 						case SDLK_RETURN:
 							cout<<"line break"<<endl;
@@ -158,17 +162,18 @@ int main(int argc, char **argv)
 			}
 			//=== on text inputs
 			else if(e.type == SDL_TEXTINPUT) {
-				textArt.text[textArt.rowCur][textArt.colCur] = (e.text.text)[0];
-				//temp if notepad mode.
-				if(textArt.colCur+1 >= textArt.colSize) {
-					if(textArt.rowCur+1 >= textArt.rowSize) {}
-					else {
-						textArt.rowCur += 1;
-						textArt.colCur = 0;
-					}
-				} else {
-					textArt.colCur += 1;
-				}
+				textArt.texts[textArt.rowCur][textArt.colCur] = (e.text.text)[0];
+				//temp if notepad mode. -> moved to editbox's changeInContent()
+				// if(textArt.colCur+1 >= textArt.colSize) {
+				// 	if(textArt.rowCur+1 >= textArt.rowSize) {}
+				// 	else {
+				// 		textArt.rowCur += 1;
+				// 		textArt.colCur = 0;
+				// 	}
+				// } else {
+				// 	textArt.colCur += 1;
+				// }
+				editBox.changeInContent((e.text.text)[0]);
 			}
 			//=== on window resize event
 			else if(e.type == SDL_WINDOWEVENT) {
@@ -186,22 +191,41 @@ int main(int argc, char **argv)
 			//=== on mouse events
 			else if(e.type == SDL_MOUSEMOTION || e.type == SDL_MOUSEBUTTONDOWN || e.type == SDL_MOUSEBUTTONUP) {
 				//=== change mouse states onEvent.
-				mouse.onEvent(&e);
+				mouse.mouseEvent(&e);
 			}
 		}
 		//=== clear & render texture
 		SDL_RenderClear(renderer);
 
 		//=== draw basic boxes in windows.
-		editBox.drawBox(renderer, font2, mouse);
-		sideBox.drawBox(renderer, font, mouse);
-		downBox.drawBox(renderer, font, mouse);
+		editBox.drawBox(renderer, mouse);
+		sideBox.drawBox(renderer, mouse);
+		downBox.drawBox(renderer, mouse);
 
 		//=== draw boxes's contents. (drawing in textures.)
-		editBox.onMouseEvent(mouse, &textArt, font);
-		editBox.drawContent(renderer, textArt, font, timeFlag, mouse);
+		editBox.drawTab(renderer, mouse);
+		editBox.drawContent(renderer, mouse, timeFlag);
+		// editBox.onMouseEvent(mouse, &textArt, fonts[0]);
+		// editBox.drawContent2(renderer, textArt, fonts[0], timeFlag, mouse);
 		
-		sideBox.drawContent(renderer, font2, mouse);
+		sideBox.drawTab(renderer, mouse);
+		sideBox.drawContent(renderer, mouse);
+
+		downBox.drawContent(renderer, mouse);
+		downBox.drawTab(renderer, mouse);
+
+		
+		// PlainBtn plain;
+		// plain.rect = {10,10,10,10};
+		// plain.draw(renderer, mouse);
+
+		//
+		// TextBtn txtbtn(fonts[0], "txt btn");
+		// txtbtn.draw(renderer, mouse);
+		//
+		// BorderBtn bordbtn(fonts[0], "txt btn");
+		// bordbtn.rect.x = 10;
+		// bordbtn.draw(renderer, mouse);
 
 		//temp bar....
 		// ScrollBar bar("vert");
@@ -226,7 +250,10 @@ int main(int argc, char **argv)
 	//=== quit
 	IMG_Quit();
 	SDL_StopTextInput();
-	TTF_CloseFont(font);
+	for(int i=0; i<(int)fonts.size(); i++) {
+		TTF_CloseFont(fonts[i]);
+	}
+	// TTF_CloseFont(font);
 	TTF_Quit();
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
