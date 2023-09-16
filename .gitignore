@@ -1,6 +1,6 @@
 *.o
 *.so
 *.a
-*.png
+# *.png
 *.txt
 sdl_events.cpp
